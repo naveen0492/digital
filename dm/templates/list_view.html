@@ -11,9 +11,14 @@ h1 {
 
 <h1>List View</h1>
 
-{% for item in product %}
+<form >
+  <input type="text" name="q" placeholder="search"><br><br>
+  <input type="submit" value="Submit">
+</form>
+
+{% for item in object_list %}
 	<li>
-		{{item.title}}-{{item.description}}-{{item.price}}
+		<a href="{{item.get_absolute_url}}">{{item.title}}</a>-{{item.description}}-{{item.price}}
 	</li>
 	{% empty %}
 </li>no products yet</li>
