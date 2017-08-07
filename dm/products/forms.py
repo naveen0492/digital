@@ -7,6 +7,7 @@ class ProductAdd(forms.Form):
     price = forms.DecimalField(max_digits=10,decimal_places=2)
 
 class ProductModel(forms.ModelForm):
+    tags = forms.CharField(label='Related tags', required=False)
     class Meta:
         model = Product
         fields = ["title","description","price","sale_price"]

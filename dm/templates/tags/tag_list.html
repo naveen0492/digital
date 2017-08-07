@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block style %}
+h1 {
+	color: green;
+}
+{% endblock style %}
+
+{% block content %}
+
+
+<h1>Tags View</h1>
+
+
+
+{% for item in object_list %}
+	<li>
+		<a href="{{item.get_absolute_url}}">{{item.title}}</a>
+	</li>
+	{% empty %}
+</li>no tags yet</li>
+
+		{% endfor %}
+{% endblock content %}

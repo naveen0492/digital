@@ -14,6 +14,7 @@ from dm.mixins import MultiSlugMixin,SubmitBtnMixin,LoginRequiredMixin
 from django.core.urlresolvers import reverse
 from wsgiref.util import FileWrapper
 from django.db.models import Q
+from tags.models import Tag
 
 
 # Create your views here.
@@ -37,9 +38,14 @@ class ProductList(ListView):
 class ProductDetail(LoginRequiredMixin,MultiSlugMixin,DetailView):
     model = Product
     template_name = "detail_view.html"
+
     def get_queryset(self,*args,**kwargs):
-        qs = super(ProductDetail,self).get_queryset(*args,**kwargs)
-        return qs
+        context = super(ProductDetailView, self).get_context_data(*args, **kwargs)
+        obj = self.get_object()
+        tags = obj.tag_set.all()
+        for tag in tags:
+            new_view = TagView.objects.count(self.request.user, tag)
+        return context
 
 
 class ProductDownload(LoginRequiredMixin,MultiSlugMixin,DetailView):
@@ -77,8 +83,16 @@ class ProductAdd(LoginRequiredMixin,SubmitBtnMixin,CreateView):
     def form_valid(self,form):
         user = self.request.user
         form.instance.user = user
+
         valid_data = super(ProductAdd,self).form_valid(form)
         form.instance.managers.add(user)
+        tags = form.cleaned_data.get("tags")
+        if tags:
+			tags_list = tags.split(",")
+			for tag in tags_list:
+				if not tag == " ":
+					new_tag = Tag.objects.get_or_create(title=str(tag).strip())[0]
+					new_tag.products.add(form.instance)
         return valid_data
 
 class ProductUpdate(LoginRequiredMixin,SubmitBtnMixin,MultiSlugMixin,UpdateView):
@@ -87,8 +101,21 @@ class ProductUpdate(LoginRequiredMixin,SubmitBtnMixin,MultiSlugMixin,UpdateView)
     template_name = "form.html"
     submit_btn = "Update"
 
-    def get_success_url(self):
-        return reverse("products:detail")
+
+    def get_initial(self):
+    		initial = super(ProductUpdate,self).get_initial()
+    		print initial
+    		tags = self.get_object().tag_set.all()
+    		initial["tags"] = ", ".join([x.title for x in tags])
+    		"""
+    		tag_list = []
+    		for x in tags:
+    			tag_list.append(x.title)
+    		"""
+    		return initial
+
+    """def get_success_url(self):
+        return reverse("products:detail")"""
 
     def get_object(self,*args,**kwargs):
         user = self.request.user
@@ -97,6 +124,20 @@ class ProductUpdate(LoginRequiredMixin,SubmitBtnMixin,MultiSlugMixin,UpdateView)
             return obj
         else :
             raise Http404
+
+    def form_valid(self, form):
+		valid_data = super(ProductUpdate, self).form_valid(form)
+		tags = form.cleaned_data.get("tags")
+		obj = self.get_object()
+		obj.tag_set.clear()
+		if tags:
+			tags_list = tags.split(",")
+
+			for tag in tags_list:
+				if not tag == " ":
+					new_tag = Tag.objects.get_or_create(title=str(tag).strip())[0]
+					new_tag.products.add(self.get_object())
+		return valid_data
 
 
 def update_view(request,object_id=None):
